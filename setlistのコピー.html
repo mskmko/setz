@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STAGE PLOT MAKER (すてぷろ)</title>
+    <style>
+        /* --- 基本デザイン --- */
+        body {
+            font-family: "Helvetica Neue", Arial, sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.2rem;
+            color: #888;
+            letter-spacing: 2px;
+        }
+
+        input#artist-name {
+            font-size: 2rem;
+            font-weight: bold;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid #555;
+            color: #fff;
+            text-align: center;
+            margin: 10px 0 30px 0;
+            width: 100%;
+            max-width: 600px;
+            outline: none;
+        }
+
+        input#artist-name::placeholder {
+            color: #444;
+        }
+
+        /* ステージエリア */
+        #stage-area {
+            width: 90%;
+            max-width: 600px;
+            height: 400px;
+            background-color: #222;
+            border: 2px solid #444;
+            position: relative;
+            overflow: hidden;
+            border-radius: 4px;
+            background-image: linear-gradient(#333 1px, transparent 1px), linear-gradient(90deg, #333 1px, transparent 1px);
+            background-size: 40px 40px;
+            margin-bottom: 20px;
+        }
+
+        .stage-label {
+            position: absolute;
+            color: #666;
+            font-weight: bold;
+            pointer-events: none;
+            font-size: 1.5rem;
+            opacity: 0.7;
+        }
+
+        /* アイコン (機材・メンバー) */
+        .gear-item {
+            border-radius: 4px;
+            position: absolute;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: grab;
+            user-select: none;
+            font-size: 0.8rem;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            z-index: 10;
+            box-sizing: border-box;
+            line-height: 1.1;
+            padding: 2px;
+            word-break: break-all;
+            border: 1px solid #000;
+        }
+
+        .gear-item:active {
+            cursor: grabbing;
+            z-index: 20;
+        }
+
+        .gear-item.circle {
+            border-radius: 50%;
+        }
+
+        /* パレットエリア */
+        .palette {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 20px;
+            max-width: 600px;
+        }
+
+        .add-btn {
+            padding: 8px 12px;
+            background-color: #333;
+            color: #ccc;
+            border: 1px solid #555;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .add-btn:hover {
+            background-color: #555;
+            color: white;
+        }
+
+        /* 入力エリア共通 */
+        .section-box {
+            width: 90%;
+            max-width: 600px;
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #333;
+        }
+
+        /* 機材リスト行 */
+        .gear-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+            background-color: #2a2a2a;
+            padding: 5px;
+            border-radius: 4px;
+            border: 1px solid transparent;
+            transition: background-color 0.2s;
+        }
+
+        .gear-row.dragging {
+            opacity: 0.5;
+            border: 1px dashed #777;
+        }
+
+        .drag-handle {
+            cursor: move;
+            color: #777;
+            font-size: 1.2rem;
+            padding: 0 5px;
+            user-select: none;
+        }
+
+        .drag-handle:hover {
+            color: #fff;
+        }
+
+        /* ラベル（機材名）のスタイル */
+        .gear-row span.label {
+            width: 90px;
+            font-weight: bold;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* メンバー名編集用の入力欄スタイル */
+        .gear-row input.label-input {
+            width: 90px;
+            font-weight: bold;
+            font-size: 0.8rem;
+            background: #222;
+            /* 少し暗くして区別 */
+            color: #81d4fa;
+            /* 編集可能であることを示す色味 */
+            border: 1px solid #555;
+            padding: 5px;
+            margin-right: 0;
+            flex: none;
+            /* 幅を固定 */
+        }
+
+        .gear-row input.label-input:focus {
+            background: #333;
+            border-color: #81d4fa;
+            outline: none;
+        }
+
+        /* 詳細入力欄 */
+        .gear-row input.detail-input {
+            background: #333;
+            border: 1px solid #444;
+            color: white;
+            padding: 8px;
+            border-radius: 4px;
+            flex: 1;
+        }
+
+        .remove-btn {
+            background: #d32f2f;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 0 10px;
+            height: 34px;
+            cursor: pointer;
+        }
+
+        textarea {
+            width: 100%;
+            height: 300px;
+            background: #333;
+            border: 1px solid #444;
+            color: white;
+            padding: 10px;
+            border-radius: 4px;
+            box-sizing: border-box;
+            margin-top: 10px;
+            font-family: inherit;
+            line-height: 1.5;
+        }
+
+        /* アクションボタン */
+        .actions {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 40px;
+        }
+
+        .action-btn {
+            padding: 12px 30px;
+            font-size: 1rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .action-btn:hover {
+            opacity: 0.8;
+        }
+
+        .btn-print {
+            background-color: #2196f3;
+            color: white;
+        }
+
+        .btn-copy {
+            background-color: #4caf50;
+            color: white;
+        }
+
+        /* リンク集エリア */
+        .link-section {
+            width: 90%;
+            max-width: 600px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #333;
+        }
+
+        .link-section h4 {
+            margin: 0 0 15px 0;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .link-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .venue-link {
+            display: block;
+            background: #222;
+            color: #888;
+            text-decoration: none;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 0.8rem;
+            transition: 0.2s;
+            border: 1px solid #333;
+        }
+
+        .venue-link:hover {
+            background: #333;
+            color: #fff;
+            border-color: #555;
+        }
+
+        footer {
+            margin-top: 40px;
+            color: #555;
+            font-size: 0.8rem;
+            text-align: center;
+        }
+
+        footer a {
+            color: #777;
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+            color: #999;
+        }
+
+        /* --- 印刷設定 --- */
+        @media print {
+            body {
+                background-color: white;
+                color: black;
+                display: block;
+            }
+
+            .palette,
+            .actions,
+            .remove-btn,
+            .drag-handle,
+            .link-section,
+            footer {
+                display: none;
+            }
+
+            #stage-area {
+                border: 2px solid black;
+                background: white;
+                margin: 0 auto 20px auto;
+            }
+
+            .gear-item {
+                border: 1px solid black;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .section-box {
+                border: none;
+                padding: 0;
+                margin-bottom: 20px;
+                width: 100%;
+                max-width: 100%;
+            }
+
+            input,
+            textarea {
+                border: 1px solid #ccc;
+                background: white;
+                color: black;
+                font-family: "Helvetica Neue", Arial, sans-serif;
+            }
+
+            /* 印刷時、入力欄の枠線を消してテキストっぽく見せる調整 */
+            .gear-row input {
+                border: none;
+                padding: 0;
+                margin-left: 5px;
+            }
+
+            .gear-row input.label-input {
+                font-weight: bold;
+                width: auto;
+                color: black;
+            }
+
+            input#artist-name {
+                border-bottom: 2px solid black;
+                color: black;
+                text-align: center;
+            }
+
+            .gear-row {
+                background-color: transparent;
+                border: none;
+                padding: 0;
+                margin-bottom: 5px;
+            }
+
+            #notes-section {
+                break-before: page;
+                page-break-before: always;
+                margin-top: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>STAGE PLOT MAKER (すてぷろ)</h1>
+    <input type="text" id="artist-name" placeholder="BAND NAME (入力してください)">
+
+    <div class="palette">
+        <button class="add-btn" onclick="addGear('Member', '#f48fb1', '#000', 40, 40, true)">🧑‍🎤 Member</button>
+        <button class="add-btn" onclick="addGear('Dr Set', '#ffca28', '#000', 80, 80)">🥁 Dr Set</button>
+        <button class="add-btn" onclick="addGear('G.Amp', '#e3f2fd', '#000', null, 50)">🎸 G.Amp</button>
+        <button class="add-btn" onclick="addGear('B.Amp', '#0d47a1', '#fff', null, 50)">🎸 B.Amp</button>
+        <button class="add-btn" onclick="addGear('Vo.Mic', '#ef5350', '#000', 40, 40)">🎤 Vo.Mic</button>
+        <button class="add-btn" onclick="addGear('Cho.Mic', '#ef5350', '#000', 40, 40)">🎤 Cho.Mic</button>
+        <button class="add-btn" onclick="addGear('Key', '#66bb6a', '#000', 100, 40)">🎹 Key</button>
+        <button class="add-btn" onclick="addGear('DI', '#26a69a', '#000', 40, 40)">🎛️ DI</button>
+        <button class="add-btn" onclick="addGear('Monitor', '#bdbdbd', '#000', null, 30)">🔊 Monitor</button>
+        <button class="add-btn" onclick="addGear('Others', '#9575cd', '#fff', null, 50)">📦 Others</button>
+    </div>
+
+    <div id="stage-area">
+        <div class="stage-label" style="top: 10px; left: 10px;">SR (下手)</div>
+        <div class="stage-label" style="top: 10px; right: 10px;">SL (上手)</div>
+        <div class="stage-label" style="bottom: 10px; width: 100%; text-align: center; font-size: 1rem;">AUDIENCE</div>
+    </div>
+
+    <div class="section-box" id="gear-list-section">
+        <h3>📋 機材リスト・回線詳細・メンバー</h3>
+        <div id="gear-list">
+            <p style="font-size: 0.8rem; color: #777;">ボタンを押して追加してください。</p>
+        </div>
+    </div>
+
+    <div class="section-box" id="notes-section">
+        <h3>📝 セットリスト・要望 (Page 2)</h3>
+        <textarea id="general-notes" placeholder="【セットリスト】
+1. 
+2. 
+3. 
+4. 
+5. 
+
+【照明・SE・その他要望】
+・リハーサル希望時間: 
+・持ち込み機材の詳細: "></textarea>
+    </div>
+
+    <div class="actions">
+        <button class="action-btn btn-print" onclick="window.print()">🖨️ 画像保存 / 印刷</button>
+        <button class="action-btn btn-copy" onclick="copyText()">📋 テキストをコピー</button>
+    </div>
+
+    <div class="link-section">
+        <h4>🔗 主要ライブハウス 機材リスト (参考)</h4>
+        <div class="link-grid">
+            <a href="https://www.loft-prj.co.jp/schedule/shelter/about" target="_blank" class="venue-link">下北沢
+                SHELTER</a>
+            <a href="https://clubque.net/about/" target="_blank" class="venue-link">下北沢 CLUB Que</a>
+            <a href="https://toos.co.jp/basementbar/equipment/" target="_blank" class="venue-link">下北沢 BASEMENT BAR</a>
+            <a href="https://www.toos.co.jp/3/equipment/" target="_blank" class="venue-link">下北沢 THREE</a>
+            <a href="http://s-era.jp/hall-info" target="_blank" class="venue-link">下北沢 ERA</a>
+            <a href="https://livehaus.jp/equipment/" target="_blank" class="venue-link">LIVEHAUS</a>
+            <a href="https://www.toos.co.jp/lush/" target="_blank" class="venue-link">渋谷 LUSH</a>
+            <a href="https://www.toos.co.jp/home/h_equipment.html" target="_blank" class="venue-link">渋谷 HOME</a>
+            <a href="https://www.shan-gri-la.jp/equip.html" target="_blank" class="venue-link">下北沢 Shangri-La</a>
+            <a href="http://www.club-upset.com/home/instrument/" target="_blank" class="venue-link">名古屋 CLUB UPSET</a>
+        </div>
+    </div>
+
+    <footer>
+        Created by <a href="https://twitter.com/YOUR_ACCOUNT_HERE" target="_blank">@YourName</a> | STAGE PLOT MAKER
+        (すてぷろ)
+    </footer>
+
+    <script>
+        let gearGlobalId = 0;
+        const usedNumbersRegistry = {};
+
+        const stageArea = document.getElementById('stage-area');
+        const gearList = document.getElementById('gear-list');
+
+        // --- 機材追加関数 ---
+        function addGear(baseName, bgColor, textColor, w, h, isCircle = false) {
+            if (gearGlobalId === 0) gearList.innerHTML = '';
+            gearGlobalId++;
+            const elementId = `gear-${gearGlobalId}`;
+
+            // 番号決定ロジック
+            if (!usedNumbersRegistry[baseName]) {
+                usedNumbersRegistry[baseName] = [];
+            }
+            const usedList = usedNumbersRegistry[baseName];
+
+            let assignedNum = 1;
+            while (usedList.includes(assignedNum)) {
+                assignedNum++;
+            }
+            usedList.push(assignedNum);
+            usedList.sort((a, b) => a - b);
+
+            let displayName = baseName;
+            if (assignedNum > 1) {
+                displayName = `${baseName} (${assignedNum})`;
+            }
+
+            // --- 1. ステージ上のアイコン作成 ---
+            const el = document.createElement('div');
+            el.classList.add('gear-item');
+            if (isCircle) el.classList.add('circle');
+
+            el.id = elementId;
+            el.innerText = displayName;
+            el.style.backgroundColor = bgColor;
+            el.style.color = textColor;
+
+            if (w) el.style.width = w + 'px';
+            else el.style.minWidth = '50px';
+            if (h) el.style.height = h + 'px';
+            else el.style.height = '50px';
+
+            el.style.top = '50%';
+            el.style.left = '50%';
+
+            setupDraggable(el);
+            stageArea.appendChild(el);
+
+            // --- 2. リスト入力欄の作成 ---
+            const row = document.createElement('div');
+            row.classList.add('gear-row');
+            row.id = `row-${elementId}`;
+            row.setAttribute('draggable', 'true');
+
+            row.dataset.basename = baseName;
+            row.dataset.assignednum = assignedNum;
+            row.dataset.elementid = elementId;
+
+            // ★ ここが変更点: MemberならInput、それ以外はSpan
+            let nameFieldHtml = '';
+            if (baseName === 'Member') {
+                // メンバー名編集用入力欄 (oninputでプロット側の文字を更新)
+                nameFieldHtml = `<input type="text" class="label-input" value="${displayName}" oninput="updatePlotLabel('${elementId}', this.value)">`;
+            } else {
+                // 通常の固定ラベル
+                nameFieldHtml = `<span class="label">${displayName}</span>`;
+            }
+
+            row.innerHTML = `
+                <div class="drag-handle">☰</div>
+                ${nameFieldHtml}
+                <input type="text" class="detail-input" placeholder="詳細 (例: 持ち込み)">
+                <button class="remove-btn" onclick="removeGear(this)">×</button>
+            `;
+
+            addDragEvents(row);
+            gearList.appendChild(row);
+        }
+
+        // --- メンバー名変更時にプロットへ反映 ---
+        function updatePlotLabel(elementId, newValue) {
+            const plotItem = document.getElementById(elementId);
+            if (plotItem) {
+                plotItem.innerText = newValue;
+            }
+        }
+
+        // --- 機材削除関数 ---
+        function removeGear(btn) {
+            const row = btn.closest('.gear-row');
+            const elementId = row.dataset.elementid;
+            const baseName = row.dataset.basename;
+            const assignedNum = parseInt(row.dataset.assignednum);
+
+            const plotItem = document.getElementById(elementId);
+            if (plotItem) plotItem.remove();
+
+            row.remove();
+
+            if (usedNumbersRegistry[baseName]) {
+                const index = usedNumbersRegistry[baseName].indexOf(assignedNum);
+                if (index > -1) {
+                    usedNumbersRegistry[baseName].splice(index, 1);
+                }
+            }
+        }
+
+        // --- ドラッグ＆ドロップ並び替え ---
+        function addDragEvents(row) {
+            row.addEventListener('dragstart', function (e) {
+                row.classList.add('dragging');
+            });
+            row.addEventListener('dragend', function (e) {
+                row.classList.remove('dragging');
+            });
+            gearList.addEventListener('dragover', function (e) {
+                e.preventDefault();
+                const draggingItem = document.querySelector('.dragging');
+                if (!draggingItem) return;
+
+                const afterElement = getDragAfterElement(gearList, e.clientY);
+                if (afterElement == null) {
+                    gearList.appendChild(draggingItem);
+                } else {
+                    gearList.insertBefore(draggingItem, afterElement);
+                }
+            });
+        }
+
+        function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('.gear-row:not(.dragging)')];
+
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+
+        // --- プロット上のドラッグ機能 ---
+        function setupDraggable(elmnt) {
+            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+            elmnt.onmousedown = dragMouseDown;
+            elmnt.ontouchstart = dragMouseDown;
+
+            function dragMouseDown(e) {
+                e = e || window.event;
+                if (e.type === 'touchstart') {
+                    pos3 = e.touches[0].clientX;
+                    pos4 = e.touches[0].clientY;
+                } else {
+                    e.preventDefault();
+                    pos3 = e.clientX;
+                    pos4 = e.clientY;
+                }
+                document.onmouseup = closeDragElement;
+                document.onmousemove = elementDrag;
+                document.ontouchend = closeDragElement;
+                document.ontouchmove = elementDrag;
+            }
+
+            function elementDrag(e) {
+                e = e || window.event;
+                let clientX, clientY;
+                if (e.type === 'touchmove') {
+                    e.preventDefault();
+                    clientX = e.touches[0].clientX;
+                    clientY = e.touches[0].clientY;
+                } else {
+                    e.preventDefault();
+                    clientX = e.clientX;
+                    clientY = e.clientY;
+                }
+                pos1 = pos3 - clientX;
+                pos2 = pos4 - clientY;
+                pos3 = clientX;
+                pos4 = clientY;
+
+                let newTop = (elmnt.offsetTop - pos2);
+                let newLeft = (elmnt.offsetLeft - pos1);
+
+                if (newTop < 0) newTop = 0;
+                if (newLeft < 0) newLeft = 0;
+                if (newTop > stageArea.offsetHeight - elmnt.offsetHeight) newTop = stageArea.offsetHeight - elmnt.offsetHeight;
+                if (newLeft > stageArea.offsetWidth - elmnt.offsetWidth) newLeft = stageArea.offsetWidth - elmnt.offsetWidth;
+
+                elmnt.style.top = newTop + "px";
+                elmnt.style.left = newLeft + "px";
+            }
+
+            function closeDragElement() {
+                document.onmouseup = null;
+                document.onmousemove = null;
+                document.ontouchend = null;
+                document.ontouchmove = null;
+            }
+        }
+
+        // --- テキストコピー機能 ---
+        function copyText() {
+            const bandName = document.getElementById('artist-name').value || "バンド名未入力";
+            let text = `【${bandName} ステージ図・回線表】\n\n`;
+
+            const rows = document.querySelectorAll('.gear-row');
+            rows.forEach(row => {
+                // Memberの場合はinputから、それ以外はspanから名前を取得
+                let name = "";
+                const spanLabel = row.querySelector('span.label');
+                const inputLabel = row.querySelector('input.label-input');
+
+                if (inputLabel) {
+                    name = inputLabel.value; // 編集された名前
+                } else if (spanLabel) {
+                    name = spanLabel.innerText; // 固定ラベル
+                }
+
+                const val = row.querySelector('input.detail-input').value;
+                if (val) text += `■ ${name}: ${val}\n`;
+            });
+
+            const notes = document.getElementById('general-notes').value;
+            if (notes) text += `\n【セットリスト・連絡事項】\n${notes}`;
+
+            navigator.clipboard.writeText(text).then(() => {
+                alert("テキスト情報をコピーしました！");
+            });
+        }
+    </script>
+</body>
+
+</html>
