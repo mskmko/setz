@@ -4,10 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>STAGE PLOT MAKER (すてぷろ)</title>
+    <title>セット図メーカー（STAGE PILOT MAKER）</title>
 
-    <meta property="og:title" content="STAGE PLOT MAKER (すてぷろ)">
-    <meta property="og:description" content="バンドマン必須！スマホでセット図と回線表をサクッと作れる無料ツール。">
+    <meta property="og:title" content="セット図メーカー（STAGE PILOT MAKER）">
+    <meta property="og:description" content="バンドマン必須！スマホでセット図と回線表をサクッと作れる無料ツール。ブラウザだけで完結、インストール不要。">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://github.com/mskmko/setz">
+    <meta property="og:image" content="https://github.com/mskmko/setz/ogp-image.png">
     <meta name="twitter:card" content="summary_large_image">
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -28,9 +31,11 @@
 
         h1 {
             margin: 0;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             color: #888;
-            letter-spacing: 2px;
+            letter-spacing: 1px;
+            text-align: center;
+            line-height: 1.4;
         }
 
         input#artist-name {
@@ -56,7 +61,6 @@
             width: 90%;
             max-width: 600px;
             aspect-ratio: 3 / 2;
-            /* 比率固定 */
             background-color: #222;
             border: 2px solid #444;
             position: relative;
@@ -66,7 +70,6 @@
             background-size: 40px 40px;
             margin-bottom: 20px;
             touch-action: none;
-            /* スクロール防止 */
         }
 
         .stage-label {
@@ -78,7 +81,7 @@
             opacity: 0.7;
         }
 
-        /* アイコン (機材・メンバー) */
+        /* アイコン */
         .gear-item {
             border-radius: 4px;
             position: absolute;
@@ -98,7 +101,6 @@
             word-break: break-all;
             border: 1px solid #000;
             touch-action: none;
-            /* スクロール防止 */
         }
 
         .gear-item:active {
@@ -177,14 +179,13 @@
             color: #fff;
         }
 
-        /* ★変更点1: スマホ(768px以下)では並び替えハンドルを非表示にする */
+        /* スマホ用設定 */
         @media (max-width: 768px) {
             .drag-handle {
                 display: none;
             }
         }
 
-        /* ラベル（機材名） */
         .gear-row span.label {
             width: 90px;
             font-weight: bold;
@@ -194,7 +195,6 @@
             text-overflow: ellipsis;
         }
 
-        /* メンバー名編集用の入力欄 */
         .gear-row input.label-input {
             width: 90px;
             font-weight: bold;
@@ -213,7 +213,6 @@
             outline: none;
         }
 
-        /* 詳細入力欄 */
         .gear-row input.detail-input {
             background: #333;
             border: 1px solid #444;
@@ -251,7 +250,6 @@
         .actions {
             display: flex;
             flex-wrap: wrap;
-            /* スマホで折り返せるように */
             gap: 15px;
             margin-bottom: 40px;
             justify-content: center;
@@ -281,13 +279,12 @@
             color: white;
         }
 
-        /* 画像保存ボタンの色 */
         .btn-save-img {
             background-color: #ff9800;
             color: white;
         }
 
-        /* リンク集エリア */
+        /* リンク集 */
         .link-section {
             width: 90%;
             max-width: 600px;
@@ -327,11 +324,13 @@
             border-color: #555;
         }
 
+        /* フッター */
         footer {
             margin-top: 40px;
             color: #555;
             font-size: 0.8rem;
             text-align: center;
+            line-height: 1.6;
         }
 
         footer a {
@@ -344,7 +343,14 @@
             color: #999;
         }
 
-        /* --- 印刷設定 (PDF保存用) --- */
+        .privacy-note {
+            display: block;
+            margin-top: 10px;
+            color: #444;
+            font-size: 0.7rem;
+        }
+
+        /* --- 印刷設定 --- */
         @media print {
             body {
                 background-color: white;
@@ -424,15 +430,15 @@
             }
         }
 
-        /* --- ★変更点2: スクリーンショット生成時の一時的なスタイル --- 
-           (html2canvasが @media print を読まないため、クラスで制御する) 
-        */
+        /* --- 画像保存用スタイル --- */
         body.screenshot-active {
             background-color: white !important;
             color: black !important;
             width: 800px;
-            /* 固定幅にしてレイアウト崩れを防ぐ */
             margin: 0 auto;
+            height: auto !important;
+            min-height: 100vh !important;
+            overflow: visible !important;
         }
 
         body.screenshot-active .palette,
@@ -485,7 +491,7 @@
 
 <body>
 
-    <h1>STAGE PLOT MAKER (すてぷろ)</h1>
+    <h1>セット図メーカー<br>（STAGE PILOT MAKER）</h1>
     <input type="text" id="artist-name" placeholder="BAND NAME (入力してください)">
 
     <div class="palette">
@@ -530,7 +536,6 @@
 
     <div class="actions">
         <button class="action-btn btn-save-img" onclick="saveAsImage()">📷 画像として保存</button>
-
         <button class="action-btn btn-print" onclick="window.print()">🖨️ PDF保存 / 印刷</button>
         <button class="action-btn btn-copy" onclick="copyText()">📋 テキストをコピー</button>
     </div>
@@ -553,8 +558,8 @@
     </div>
 
     <footer>
-        Created by <a href="https://twitter.com/mskmko" target="_blank">@mskmko</a> | STAGE PLOT MAKER
-        (すてぷろ)v9
+        Created by <a href="https://twitter.com/mskmko" target="_blank">@mskmko</a> | セット図メーカー<br>
+        <span class="privacy-note">※このツールはブラウザ上ですべて完結します。入力されたデータがサーバーに送信・保存されることはありません。</span>
     </footer>
 
     <script>
@@ -564,7 +569,6 @@
         const stageArea = document.getElementById('stage-area');
         const gearList = document.getElementById('gear-list');
 
-        // --- 機材追加関数 ---
         function addGear(baseName, bgColor, textColor, w, h, isCircle = false) {
             if (gearGlobalId === 0) gearList.innerHTML = '';
             gearGlobalId++;
@@ -781,31 +785,35 @@
             });
         }
 
-        // --- ★変更点2: 画像保存機能 (html2canvas使用) ---
         function saveAsImage() {
-            // スクリーンショット用のクラスを一時的に付与（白背景・ボタン非表示など）
+            // スクロールをトップに戻す
+            window.scrollTo(0, 0);
+
+            // スクリーンショット用クラス付与
             document.body.classList.add('screenshot-active');
 
-            // スタイル適用を待つために少し遅延させる
             setTimeout(() => {
+                const bodyHeight = document.body.scrollHeight;
+
                 html2canvas(document.body, {
-                    scrollY: -window.scrollY, // スクロール位置の補正
-                    scale: 2 // 高画質化
+                    height: bodyHeight,
+                    windowHeight: bodyHeight,
+                    scrollY: 0,
+                    scale: 2,
+                    useCORS: true
                 }).then(canvas => {
-                    // ダウンロードリンク作成
                     const link = document.createElement('a');
-                    link.download = 'stage_plot.png';
+                    link.download = 'setz_stage_plot.png';
                     link.href = canvas.toDataURL();
                     link.click();
 
-                    // クラス除去（元のダークモードに戻す）
                     document.body.classList.remove('screenshot-active');
                 }).catch(err => {
                     alert("画像の保存に失敗しました。");
                     console.error(err);
                     document.body.classList.remove('screenshot-active');
                 });
-            }, 100);
+            }, 500);
         }
     </script>
 </body>
