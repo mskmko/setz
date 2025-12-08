@@ -5,6 +5,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>STAGE PLOT MAKER (すてぷろ)</title>
+
+    <meta property="og:title" content="STAGE PLOT MAKER (すてぷろ)">
+    <meta property="og:description" content="バンドマン必須！スマホでセット図と回線表をサクッと作れる無料ツール。">
+    <meta name="twitter:card" content="summary_large_image">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
     <style>
         /* --- 基本デザイン --- */
         body {
@@ -16,6 +23,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            overscroll-behavior-y: none;
         }
 
         h1 {
@@ -47,7 +55,8 @@
         #stage-area {
             width: 90%;
             max-width: 600px;
-            height: 400px;
+            aspect-ratio: 3 / 2;
+            /* 比率固定 */
             background-color: #222;
             border: 2px solid #444;
             position: relative;
@@ -56,6 +65,8 @@
             background-image: linear-gradient(#333 1px, transparent 1px), linear-gradient(90deg, #333 1px, transparent 1px);
             background-size: 40px 40px;
             margin-bottom: 20px;
+            touch-action: none;
+            /* スクロール防止 */
         }
 
         .stage-label {
@@ -86,6 +97,8 @@
             padding: 2px;
             word-break: break-all;
             border: 1px solid #000;
+            touch-action: none;
+            /* スクロール防止 */
         }
 
         .gear-item:active {
@@ -164,7 +177,14 @@
             color: #fff;
         }
 
-        /* ラベル（機材名）のスタイル */
+        /* ★変更点1: スマホ(768px以下)では並び替えハンドルを非表示にする */
+        @media (max-width: 768px) {
+            .drag-handle {
+                display: none;
+            }
+        }
+
+        /* ラベル（機材名） */
         .gear-row span.label {
             width: 90px;
             font-weight: bold;
@@ -174,20 +194,17 @@
             text-overflow: ellipsis;
         }
 
-        /* メンバー名編集用の入力欄スタイル */
+        /* メンバー名編集用の入力欄 */
         .gear-row input.label-input {
             width: 90px;
             font-weight: bold;
             font-size: 0.8rem;
             background: #222;
-            /* 少し暗くして区別 */
             color: #81d4fa;
-            /* 編集可能であることを示す色味 */
             border: 1px solid #555;
             padding: 5px;
             margin-right: 0;
             flex: none;
-            /* 幅を固定 */
         }
 
         .gear-row input.label-input:focus {
@@ -233,13 +250,16 @@
         /* アクションボタン */
         .actions {
             display: flex;
+            flex-wrap: wrap;
+            /* スマホで折り返せるように */
             gap: 15px;
             margin-bottom: 40px;
+            justify-content: center;
         }
 
         .action-btn {
-            padding: 12px 30px;
-            font-size: 1rem;
+            padding: 12px 24px;
+            font-size: 0.9rem;
             font-weight: bold;
             border: none;
             border-radius: 50px;
@@ -258,6 +278,12 @@
 
         .btn-copy {
             background-color: #4caf50;
+            color: white;
+        }
+
+        /* 画像保存ボタンの色 */
+        .btn-save-img {
+            background-color: #ff9800;
             color: white;
         }
 
@@ -318,7 +344,7 @@
             color: #999;
         }
 
-        /* --- 印刷設定 --- */
+        /* --- 印刷設定 (PDF保存用) --- */
         @media print {
             body {
                 background-color: white;
@@ -339,6 +365,9 @@
                 border: 2px solid black;
                 background: white;
                 margin: 0 auto 20px auto;
+                aspect-ratio: 3 / 2;
+                width: 100%;
+                max-width: 600px;
             }
 
             .gear-item {
@@ -363,7 +392,6 @@
                 font-family: "Helvetica Neue", Arial, sans-serif;
             }
 
-            /* 印刷時、入力欄の枠線を消してテキストっぽく見せる調整 */
             .gear-row input {
                 border: none;
                 padding: 0;
@@ -394,6 +422,63 @@
                 page-break-before: always;
                 margin-top: 20px;
             }
+        }
+
+        /* --- ★変更点2: スクリーンショット生成時の一時的なスタイル --- 
+           (html2canvasが @media print を読まないため、クラスで制御する) 
+        */
+        body.screenshot-active {
+            background-color: white !important;
+            color: black !important;
+            width: 800px;
+            /* 固定幅にしてレイアウト崩れを防ぐ */
+            margin: 0 auto;
+        }
+
+        body.screenshot-active .palette,
+        body.screenshot-active .actions,
+        body.screenshot-active .remove-btn,
+        body.screenshot-active .drag-handle,
+        body.screenshot-active .link-section,
+        body.screenshot-active footer {
+            display: none !important;
+        }
+
+        body.screenshot-active #stage-area {
+            border: 2px solid black !important;
+            background-color: white !important;
+            margin: 0 auto 20px auto;
+        }
+
+        body.screenshot-active .gear-item {
+            border: 1px solid black !important;
+        }
+
+        body.screenshot-active .section-box {
+            background: transparent !important;
+            border: none !important;
+            color: black !important;
+            padding: 0;
+        }
+
+        body.screenshot-active input,
+        body.screenshot-active textarea {
+            background: white !important;
+            color: black !important;
+            border: 1px solid #ccc !important;
+        }
+
+        body.screenshot-active input#artist-name {
+            color: black !important;
+            border-bottom: 2px solid black !important;
+        }
+
+        body.screenshot-active .gear-row {
+            background: transparent !important;
+        }
+
+        body.screenshot-active .gear-row input {
+            border: none !important;
         }
     </style>
 </head>
@@ -444,7 +529,9 @@
     </div>
 
     <div class="actions">
-        <button class="action-btn btn-print" onclick="window.print()">🖨️ 画像保存 / 印刷</button>
+        <button class="action-btn btn-save-img" onclick="saveAsImage()">📷 画像として保存</button>
+
+        <button class="action-btn btn-print" onclick="window.print()">🖨️ PDF保存 / 印刷</button>
         <button class="action-btn btn-copy" onclick="copyText()">📋 テキストをコピー</button>
     </div>
 
@@ -466,8 +553,8 @@
     </div>
 
     <footer>
-        Created by <a href="https://x.com/mskmko" target="_blank">@mskmko</a> | STAGE PLOT MAKER
-        (すてぷろ)v1
+        Created by <a href="https://twitter.com/YOUR_ACCOUNT_HERE" target="_blank">@YourName</a> | STAGE PLOT MAKER
+        (すてぷろ)
     </footer>
 
     <script>
@@ -483,7 +570,6 @@
             gearGlobalId++;
             const elementId = `gear-${gearGlobalId}`;
 
-            // 番号決定ロジック
             if (!usedNumbersRegistry[baseName]) {
                 usedNumbersRegistry[baseName] = [];
             }
@@ -501,7 +587,6 @@
                 displayName = `${baseName} (${assignedNum})`;
             }
 
-            // --- 1. ステージ上のアイコン作成 ---
             const el = document.createElement('div');
             el.classList.add('gear-item');
             if (isCircle) el.classList.add('circle');
@@ -522,7 +607,6 @@
             setupDraggable(el);
             stageArea.appendChild(el);
 
-            // --- 2. リスト入力欄の作成 ---
             const row = document.createElement('div');
             row.classList.add('gear-row');
             row.id = `row-${elementId}`;
@@ -532,13 +616,10 @@
             row.dataset.assignednum = assignedNum;
             row.dataset.elementid = elementId;
 
-            // ★ ここが変更点: MemberならInput、それ以外はSpan
             let nameFieldHtml = '';
             if (baseName === 'Member') {
-                // メンバー名編集用入力欄 (oninputでプロット側の文字を更新)
                 nameFieldHtml = `<input type="text" class="label-input" value="${displayName}" oninput="updatePlotLabel('${elementId}', this.value)">`;
             } else {
-                // 通常の固定ラベル
                 nameFieldHtml = `<span class="label">${displayName}</span>`;
             }
 
@@ -553,7 +634,6 @@
             gearList.appendChild(row);
         }
 
-        // --- メンバー名変更時にプロットへ反映 ---
         function updatePlotLabel(elementId, newValue) {
             const plotItem = document.getElementById(elementId);
             if (plotItem) {
@@ -561,7 +641,6 @@
             }
         }
 
-        // --- 機材削除関数 ---
         function removeGear(btn) {
             const row = btn.closest('.gear-row');
             const elementId = row.dataset.elementid;
@@ -581,7 +660,6 @@
             }
         }
 
-        // --- ドラッグ＆ドロップ並び替え ---
         function addDragEvents(row) {
             row.addEventListener('dragstart', function (e) {
                 row.classList.add('dragging');
@@ -617,7 +695,6 @@
             }, { offset: Number.NEGATIVE_INFINITY }).element;
         }
 
-        // --- プロット上のドラッグ機能 ---
         function setupDraggable(elmnt) {
             let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
             elmnt.onmousedown = dragMouseDown;
@@ -676,22 +753,20 @@
             }
         }
 
-        // --- テキストコピー機能 ---
         function copyText() {
             const bandName = document.getElementById('artist-name').value || "バンド名未入力";
             let text = `【${bandName} ステージ図・回線表】\n\n`;
 
             const rows = document.querySelectorAll('.gear-row');
             rows.forEach(row => {
-                // Memberの場合はinputから、それ以外はspanから名前を取得
                 let name = "";
                 const spanLabel = row.querySelector('span.label');
                 const inputLabel = row.querySelector('input.label-input');
 
                 if (inputLabel) {
-                    name = inputLabel.value; // 編集された名前
+                    name = inputLabel.value;
                 } else if (spanLabel) {
-                    name = spanLabel.innerText; // 固定ラベル
+                    name = spanLabel.innerText;
                 }
 
                 const val = row.querySelector('input.detail-input').value;
@@ -704,6 +779,33 @@
             navigator.clipboard.writeText(text).then(() => {
                 alert("テキスト情報をコピーしました！");
             });
+        }
+
+        // --- ★変更点2: 画像保存機能 (html2canvas使用) ---
+        function saveAsImage() {
+            // スクリーンショット用のクラスを一時的に付与（白背景・ボタン非表示など）
+            document.body.classList.add('screenshot-active');
+
+            // スタイル適用を待つために少し遅延させる
+            setTimeout(() => {
+                html2canvas(document.body, {
+                    scrollY: -window.scrollY, // スクロール位置の補正
+                    scale: 2 // 高画質化
+                }).then(canvas => {
+                    // ダウンロードリンク作成
+                    const link = document.createElement('a');
+                    link.download = 'stage_plot.png';
+                    link.href = canvas.toDataURL();
+                    link.click();
+
+                    // クラス除去（元のダークモードに戻す）
+                    document.body.classList.remove('screenshot-active');
+                }).catch(err => {
+                    alert("画像の保存に失敗しました。");
+                    console.error(err);
+                    document.body.classList.remove('screenshot-active');
+                });
+            }, 100);
         }
     </script>
 </body>
