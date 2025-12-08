@@ -4,9 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>セット図メーカー"setz"（STAGE PILOT MAKER）</title>
+    <title>セット図メーカー（STAGE PLOT MAKER）</title>
 
-    <meta property="og:title" content="セット図メーカー&quot;setz&quot;（STAGE PILOT MAKER）">
+    <meta property="og:title" content="セット図メーカー（STAGE PLOT MAKER）">
     <meta property="og:description" content="バンドマン必須！スマホでセット図と回線表をサクッと作れる無料ツール。ブラウザだけで完結、インストール不要。">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://あなたのGitHubID.github.io/リポジトリ名/">
@@ -29,13 +29,41 @@
             overscroll-behavior-y: none;
         }
 
+        /* ★追加: ヘッダーエリア（ロゴとタイトルの入れ物） */
+        .app-header {
+            display: flex;
+            align-items: center;
+            /* 垂直方向中央揃え */
+            width: 100%;
+            max-width: 600px;
+            margin-bottom: 10px;
+        }
+
+        /* ★追加: ロゴのスタイル */
+        .logo {
+            font-size: 2rem;
+            font-weight: 900;
+            /* かなり太く */
+            color: #cfe5fe;
+            letter-spacing: 0.2px;
+            margin-right: 15px;
+            /* タイトルとの間隔 */
+            font-style: italic;
+            /* 少し斜めにしてスピード感を */
+        }
+
+        /* ★変更: H1のデザイン（左寄せに変更など） */
         h1 {
             margin: 0;
-            font-size: 1.1rem;
+            font-size: 1rem;
             color: #888;
             letter-spacing: 1px;
-            text-align: center;
-            line-height: 1.4;
+            text-align: left;
+            /* 左寄せ */
+            line-height: 1.3;
+            font-weight: normal;
+            flex: 1;
+            /* 残りの幅を埋める */
         }
 
         input#artist-name {
@@ -358,6 +386,8 @@
                 display: block;
             }
 
+            /* ★変更: ヘッダー（ロゴとタイトル）は印刷しない */
+            .app-header,
             .palette,
             .actions,
             .remove-btn,
@@ -441,6 +471,8 @@
             overflow: visible !important;
         }
 
+        /* ★変更: ヘッダー（ロゴとタイトル）は画像保存時も隠す */
+        body.screenshot-active .app-header,
         body.screenshot-active .palette,
         body.screenshot-active .actions,
         body.screenshot-active .remove-btn,
@@ -478,7 +510,6 @@
             height: auto !important;
         }
 
-        /* バンド名はJSでテキストに置換するので、CSSでの調整は最低限でOK */
         body.screenshot-active .gear-row {
             background: transparent !important;
             margin-bottom: 8px !important;
@@ -492,7 +523,11 @@
 
 <body>
 
-    <h1>セット図メーカー"setz"<br>（STAGE PILOT MAKER）</h1>
+    <header class="app-header">
+        <div class="logo">Setz</div>
+        <h1>セット図メーカー<br>（STAGE PLOT MAKER）</h1>
+    </header>
+
     <input type="text" id="artist-name" placeholder="BAND NAME (入力してください)">
 
     <div class="palette">
@@ -559,7 +594,7 @@
     </div>
 
     <footer>
-        Created by <a href="https://twitter.com/mskmko" target="_blank">@mskmko</a> | セット図メーカー"setz"<br>
+        Created by <a href="https://twitter.com/mskmko" target="_blank">@mskmko</a> | セット図メーカー（STAGE PLOT MAKER）<br>
         <span class="privacy-note">※このツールはブラウザ上ですべて完結します。入力されたデータがサーバーに送信・保存されることはありません。</span>
     </footer>
 
@@ -801,23 +836,19 @@
         function saveAsImage() {
             // 1. バンド名入力欄の値を取得
             const nameInput = document.getElementById('artist-name');
-            const nameValue = nameInput.value || "BAND NAME"; // 空ならプレースホルダー的な文字
+            const nameValue = nameInput.value || "BAND NAME";
 
             // 2. 一時的なテキスト表示用DIVを作成
             const textDiv = document.createElement('div');
             textDiv.innerText = nameValue;
             textDiv.id = 'temp-artist-name';
-            // 見た目を元のinputに似せる（文字色を黒、中央揃え、太字など）
-            textDiv.style.cssText = "font-size: 2rem; font-weight: bold; text-align: center; color: black; margin-bottom: 30px; padding-top: 10px;";
+            textDiv.style.cssText = "font-size: 2rem; font-weight: bold; text-align: center; color: black; margin-bottom: 30px; padding-top: 10px; font-family: inherit;";
 
             // 3. 入力欄を隠して、テキストDIVを挿入
             nameInput.style.display = 'none';
             nameInput.parentNode.insertBefore(textDiv, nameInput);
 
-            // スクロールをトップに
             window.scrollTo(0, 0);
-
-            // クラス付与
             document.body.classList.add('screenshot-active');
 
             setTimeout(() => {
@@ -831,20 +862,20 @@
                     useCORS: true
                 }).then(canvas => {
                     const link = document.createElement('a');
-                    link.download = 'setz_stage_plot.png';
+                    link.download = 'stage_plot.png';
                     link.href = canvas.toDataURL();
                     link.click();
 
                     // 4. 元に戻す処理
                     document.body.classList.remove('screenshot-active');
-                    textDiv.remove(); // テキストDIVを削除
-                    nameInput.style.display = 'block'; // 入力欄を再表示
+                    textDiv.remove();
+                    nameInput.style.display = 'block';
 
                 }).catch(err => {
                     alert("画像の保存に失敗しました。");
                     console.error(err);
                     document.body.classList.remove('screenshot-active');
-                    textDiv.remove();
+                    if (textDiv.parentNode) textDiv.remove();
                     nameInput.style.display = 'block';
                 });
             }, 500);
