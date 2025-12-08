@@ -4,13 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>セット図メーカー（STAGE PILOT MAKER）</title>
+    <title>セット図メーカー"setz"（STAGE PILOT MAKER）</title>
 
-    <meta property="og:title" content="セット図メーカー（STAGE PILOT MAKER）">
+    <meta property="og:title" content="セット図メーカー&quot;setz&quot;（STAGE PILOT MAKER）">
     <meta property="og:description" content="バンドマン必須！スマホでセット図と回線表をサクッと作れる無料ツール。ブラウザだけで完結、インストール不要。">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://github.com/mskmko/setz">
-    <meta property="og:image" content="https://github.com/mskmko/setz/ogp-image.png">
+    <meta property="og:url" content="https://あなたのGitHubID.github.io/リポジトリ名/">
+    <meta property="og:image" content="https://あなたのGitHubID.github.io/リポジトリ名/ogp-image.png">
     <meta name="twitter:card" content="summary_large_image">
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -472,15 +472,16 @@
             background: white !important;
             color: black !important;
             border: 1px solid #ccc !important;
+            padding-top: 4px !important;
+            padding-bottom: 4px !important;
+            line-height: 1.5 !important;
+            height: auto !important;
         }
 
-        body.screenshot-active input#artist-name {
-            color: black !important;
-            border-bottom: 2px solid black !important;
-        }
-
+        /* バンド名はJSでテキストに置換するので、CSSでの調整は最低限でOK */
         body.screenshot-active .gear-row {
             background: transparent !important;
+            margin-bottom: 8px !important;
         }
 
         body.screenshot-active .gear-row input {
@@ -491,7 +492,7 @@
 
 <body>
 
-    <h1>セット図メーカー<br>（STAGE PILOT MAKER）</h1>
+    <h1>セット図メーカー"setz"<br>（STAGE PILOT MAKER）</h1>
     <input type="text" id="artist-name" placeholder="BAND NAME (入力してください)">
 
     <div class="palette">
@@ -558,7 +559,7 @@
     </div>
 
     <footer>
-        Created by <a href="https://twitter.com/mskmko" target="_blank">@mskmko</a> | セット図メーカー<br>
+        Created by <a href="https://twitter.com/mskmko" target="_blank">@mskmko</a> | セット図メーカー"setz"<br>
         <span class="privacy-note">※このツールはブラウザ上ですべて完結します。入力されたデータがサーバーに送信・保存されることはありません。</span>
     </footer>
 
@@ -750,6 +751,18 @@
             }
 
             function closeDragElement() {
+                const parentWidth = stageArea.offsetWidth;
+                const parentHeight = stageArea.offsetHeight;
+
+                const currentLeft = elmnt.offsetLeft;
+                const currentTop = elmnt.offsetTop;
+
+                const leftPercent = (currentLeft / parentWidth) * 100;
+                const topPercent = (currentTop / parentHeight) * 100;
+
+                elmnt.style.left = leftPercent + "%";
+                elmnt.style.top = topPercent + "%";
+
                 document.onmouseup = null;
                 document.onmousemove = null;
                 document.ontouchend = null;
@@ -786,10 +799,25 @@
         }
 
         function saveAsImage() {
-            // スクロールをトップに戻す
+            // 1. バンド名入力欄の値を取得
+            const nameInput = document.getElementById('artist-name');
+            const nameValue = nameInput.value || "BAND NAME"; // 空ならプレースホルダー的な文字
+
+            // 2. 一時的なテキスト表示用DIVを作成
+            const textDiv = document.createElement('div');
+            textDiv.innerText = nameValue;
+            textDiv.id = 'temp-artist-name';
+            // 見た目を元のinputに似せる（文字色を黒、中央揃え、太字など）
+            textDiv.style.cssText = "font-size: 2rem; font-weight: bold; text-align: center; color: black; margin-bottom: 30px; padding-top: 10px;";
+
+            // 3. 入力欄を隠して、テキストDIVを挿入
+            nameInput.style.display = 'none';
+            nameInput.parentNode.insertBefore(textDiv, nameInput);
+
+            // スクロールをトップに
             window.scrollTo(0, 0);
 
-            // スクリーンショット用クラス付与
+            // クラス付与
             document.body.classList.add('screenshot-active');
 
             setTimeout(() => {
@@ -807,11 +835,17 @@
                     link.href = canvas.toDataURL();
                     link.click();
 
+                    // 4. 元に戻す処理
                     document.body.classList.remove('screenshot-active');
+                    textDiv.remove(); // テキストDIVを削除
+                    nameInput.style.display = 'block'; // 入力欄を再表示
+
                 }).catch(err => {
                     alert("画像の保存に失敗しました。");
                     console.error(err);
                     document.body.classList.remove('screenshot-active');
+                    textDiv.remove();
+                    nameInput.style.display = 'block';
                 });
             }, 500);
         }
