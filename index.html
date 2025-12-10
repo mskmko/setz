@@ -518,6 +518,22 @@
         body.screenshot-active .gear-row input {
             border: none !important;
         }
+        /* --- ★追加: プレースホルダー非表示設定 --- */
+        /* 印刷時はプレースホルダーを透明にする */
+        @media print {
+            input::placeholder,
+            textarea::placeholder {
+                color: transparent !important;
+                opacity: 0 !important;
+            }
+        }
+
+        /* 画像生成時もプレースホルダーを透明にする */
+        body.screenshot-active input::placeholder,
+        body.screenshot-active textarea::placeholder {
+            color: transparent !important;
+            opacity: 0 !important;
+        }
     </style>
 </head>
 
@@ -806,8 +822,12 @@
         }
 
         function copyText() {
-            const bandName = document.getElementById('artist-name').value || "バンド名未入力";
-            let text = `【${bandName} ステージ図・回線表】\n\n`;
+            // 修正: デフォルトの「バンド名未入力」という文字を削除
+            const bandNameInput = document.getElementById('artist-name');
+            const bandName = bandNameInput.value ? bandNameInput.value : ""; 
+            
+            // バンド名がある場合のみヘッダーをつける、なければシンプルに
+            let text = bandName ? `【${bandName} ステージ図・回線表】\n\n` : `【ステージ図・回線表】\n\n`;
 
             const rows = document.querySelectorAll('.gear-row');
             rows.forEach(row => {
@@ -822,11 +842,17 @@
                 }
 
                 const val = row.querySelector('input.detail-input').value;
-                if (val) text += `■ ${name}: ${val}\n`;
+                // 値が入っている場合のみテキストに追加（プレースホルダーは含まれない）
+                if (val && val.trim() !== "") {
+                    text += `■ ${name}: ${val}\n`;
+                }
             });
 
             const notes = document.getElementById('general-notes').value;
-            if (notes) text += `\n【セットリスト・連絡事項】\n${notes}`;
+            // メモがある場合のみ追加
+            if (notes && notes.trim() !== "") {
+                text += `\n【セットリスト・連絡事項】\n${notes}`;
+            }
 
             navigator.clipboard.writeText(text).then(() => {
                 alert("テキスト情報をコピーしました！");
@@ -836,13 +862,16 @@
         function saveAsImage() {
             // 1. バンド名入力欄の値を取得
             const nameInput = document.getElementById('artist-name');
-            const nameValue = nameInput.value || "BAND NAME";
+            // 修正: 値がない場合は空文字にする（"BAND NAME"という仮文字を出さない）
+            const nameValue = nameInput.value || "";
 
             // 2. 一時的なテキスト表示用DIVを作成
             const textDiv = document.createElement('div');
             textDiv.innerText = nameValue;
             textDiv.id = 'temp-artist-name';
-            textDiv.style.cssText = "font-size: 2rem; font-weight: bold; text-align: center; color: black; margin-bottom: 30px; padding-top: 10px; font-family: inherit;";
+            // 名前が空ならマージンも消して詰める、あればスペース確保
+            const marginBottom = nameValue ? "30px" : "0px";
+            textDiv.style.cssText = `font-size: 2rem; font-weight: bold; text-align: center; color: black; margin-bottom: ${marginBottom}; padding-top: 10px; font-family: inherit;`;
 
             // 3. 入力欄を隠して、テキストDIVを挿入
             nameInput.style.display = 'none';
@@ -859,7 +888,9 @@
                     windowHeight: bodyHeight,
                     scrollY: 0,
                     scale: 2,
-                    useCORS: true
+                    useCORS: true,
+                    // 画像化する際、背景色を強制的に白にする
+                    backgroundColor: "#ffffff" 
                 }).then(canvas => {
                     const link = document.createElement('a');
                     link.download = 'stage_plot.png';
